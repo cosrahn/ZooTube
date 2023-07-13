@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>ZooTube Action Clips</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      margin-top: 10em;
+      /* height: 100; */
+      width: 100%;
+    }
+
+    .container {
+      display: flex;
+      width: 95%;
+      height: 400px;
+    }
+
+    live {
+      font-size: 2em;
+    }
+
+    video {
+      width: 100%;
+      padding-right: 1em;
+    }
+
+    .video-player {
+      display: inline list-item;
+      margin: auto;
+    }
+
+    .upcoming-videos {
+      background-color: #f2f2f2;
+      padding: 0.1em;
+      width: 100%;
+    }
+  </style>
+  <link rel="stylesheet" href="/streaming/controlbar.css">
+
+  <script src="/streaming/ControlBar.js"></script>
+  <!-- link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css" -->
+  <link rel="stylesheet" href="/vod/w3.css">
+</head>
+
+<body>
+
+
+  <div class="w3-container" style="width: 95%;">
+    <h2>H&uuml;hnerstall Action</h2>
+    <div class="w3-row">
+      <div class="w3-col l10 w3-white w3-center">
+        <div class="video-player">
+          <video id="videoPlayer" autoplay="autoplay" controls="controls">
+            <source src="/streaming/master.m3u8" type="application/vnd.apple.mpegurl" />
+          </video>
+          <div id="videoController" class="video-controller unselectable">
+            <div id="playPauseBtn" class="btn-play-pause" title="Play/Pause">
+              <span id="iconPlayPause" class="icon-play"></span>
+            </div>
+            <span id="videoTime" class="time-display">00:00:00</span>
+            <div id="fullscreenBtn" class="btn-fullscreen control-icon-layout" title="Fullscreen">
+              <span class="icon-fullscreen-enter"></span>
+            </div>
+            <div id="bitrateListBtn" class="control-icon-layout" title="Bitrate List">
+              <span class="icon-bitrate"></span>
+            </div>
+            <input type="range" id="volumebar" class="volumebar" value="1" min="0" max="1" step=".01" />
+            <div id="muteBtn" class="btn-mute control-icon-layout" title="Mute">
+              <span id="iconMute" class="icon-mute-off"></span>
+            </div>
+            <div id="trackSwitchBtn" class="control-icon-layout" title="A/V Tracks">
+              <span class="icon-tracks"></span>
+            </div>
+            <div id="captionBtn" class="btn-caption control-icon-layout" title="Closed Caption">
+              <span class="icon-caption"></span>
+            </div>
+            <span id="videoDuration" class="duration-display">00:00:00</span>
+            <div class="seekContainer">
+              <input type="range" id="seekbar" value="0" class="seekbar" min="0" step="0.01" />
+            </div>
+          </div>
+          <div id="Comment"></div>
+          <div id="Download"></div>
+        </div>
+      </div>
+      <div class="w3-col l2 w3-left">
+        <div class="upcoming-videos">
+          <div id="live"></div>
+          <div id="quote"></div>
+          <h2>Clips</h2>
+          <ul id="video-list"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/streaming/dash.all.min.js"></script>
+  <script>
+    // Add your DASH video URLs here
+    var videoUrls = [
+      ['Live', 'streaming/manifest.mpd'],
+    ];
+    var quote = { "quote": 0 };
+    var last_clip_element = null;
+
+    var LiveVideo = document.getElementById('live');
+    var link = document.createElement('a');
+    link.href = 'javascript:void(0)';
+    //link.textContent = "LIVE";
+    link.innerHTML = "LIVE";
+    link.style.fontSize = "2em";
+    link.addEventListener('click', function () {
+      changeToLiveSource('/streaming/manifest.mpd', 'Live Stream');
+    });
+    LiveVideo.appendChild(link);
+
+    var intervalId_01 = setInterval(function () {
+      fetch('/vod/video_list.json', { cache: "no-cache" })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(json => update_videoUrls(json))
+        .catch(err => console.error(`Fetch problem: ${err.message}`));
+    }, 10000);
+
+    var intervalId_02 = setInterval(function () {
+      fetch('/streaming/quote.json', { cache: "no-cache" })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(json => update_quote(json))
+        .catch(err => console.error(`Fetch problem: ${err.message}`));
+    }, 1000);
+
+    fetch('/vod/video_list.json', { cache: "no-cache" })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(json => update_videoUrls(json))
+      .catch(err => console.error(`Fetch problem: ${err.message}`));
+
+    function update_videoUrls(json_data) {
+      videoUrls = json_data;
+      UpdateVideoList();
+    }
+
+    function update_quote(json_data) {
+      quote = json_data;
+
+      var quote_element = document.getElementById('quote');
+      while (quote_element.firstChild) {
+        quote_element.removeChild(quote_element.firstChild);
+      }
+      quote_element.innerHTML = 'Zuschauer: ' + quote['quote'];
+    }
+
+    // Update the video source when a video is clicked in the list
+    function changeToLiveSource(sourceUrl, comment) {
+      var video = document.querySelector("#videoPlayer");
+      player.initialize(video, sourceUrl, true);
+
+      UpdateComment(comment);
+
+      var Download = document.getElementById('Download');
+      while (Download.firstChild) {
+        Download.removeChild(Download.firstChild);
+      }
+    }
+
+    function changeVideoSource(vod_ts, comment) {
+      sourceUrl = "/vod/" + vod_ts + '/manifest.mpd';
+
+      var video = document.querySelector("#videoPlayer");
+      player.initialize(video, sourceUrl, true);
+
+      UpdateComment(comment);
+
+      var Download = document.getElementById('Download');
+
+      while (Download.firstChild) {
+        Download.removeChild(Download.firstChild);
+      }
+
+      var link = document.createElement('a');
+      link.href = "/vod/" + vod_ts + "/" + 'ChickenRun_' + vod_ts + '_HighRes.ts';
+      link.textContent = "Download HighRes";
+      Download.appendChild(link);
+
+      var text = document.createTextNode(" | ");
+      Download.appendChild(text);
+
+      var Download = document.getElementById('Download');
+      var link = document.createElement('a');
+      link.href = "/vod/" + vod_ts + "/" + 'ChickenRun_' + vod_ts + '_LowRes.ts';
+      link.textContent = "Download LowRes";
+      Download.appendChild(link);
+    }
+
+    // Create the video list dynamically
+    function createVideoList() {
+      var videoList = document.getElementById('video-list');
+      videoUrls.forEach(function (url) {
+        var listItem = document.createElement('li');
+        var link = document.createElement('a');
+        link.href = 'javascript:void(0)';
+        if (url[2] === "") {
+          link.textContent = url[0];
+        } else {
+          link.innerHTML = url[0] + ' &#11088;';
+        }
+        link.addEventListener('click', function () {
+          changeVideoSource(url[3], url[2]);
+        });
+        listItem.appendChild(link);
+        videoList.appendChild(listItem);
+      });
+    }
+
+    // Update the video list dynamically
+    function UpdateVideoList() {
+      var videoList = document.getElementById('video-list');
+      while (videoList.firstChild) {
+        videoList.removeChild(videoList.firstChild);
+      }
+      videoUrls.forEach(function (url) {
+        var listItem = document.createElement('li');
+        var link = document.createElement('a');
+        link.href = 'javascript:void(0)';
+        if (url[2] === "") {
+          link.textContent = url[0];
+        } else {
+          link.innerHTML = url[0] + ' &#11088;';
+        }
+        // link.textContent = url[0];
+        link.addEventListener('click', function () {
+          changeVideoSource(url[3], url[2]);
+        });
+        listItem.appendChild(link);
+        videoList.appendChild(listItem);
+      });
+    }
+
+    function UpdateComment(comment) {
+      var Comment_element = document.getElementById('Comment');
+
+      while (Comment_element.firstChild) {
+        Comment_element.removeChild(Comment_element.firstChild);
+      }
+      var comment_text = document.createTextNode(" " + comment + " ");
+      Comment_element.appendChild(comment_text);
+    }
+
+    createVideoList();
+  </script>
+
+  <script>
+    var player = init();
+
+    function init() {
+      var mpd_url = "/streaming/manifest.mpd"
+      UpdateComment("Live stream");
+      var video = document.querySelector("#videoPlayer");
+      player = dashjs.MediaPlayer().create();
+      player.on(dashjs.MediaPlayer.events.PLAYBACK_NOT_ALLOWED, function (data) {
+        console.log('Playback did not start due to auto play restrictions. Muting audio and reloading');
+        video.muted = true;
+        player.initialize(video, mpd_url, true);
+      });
+      player.initialize(video, mpd_url, true);
+      //        player.attachView(video);
+      var controlbar = new ControlBar(player); //Player is instance of Dash.js MediaPlayer;
+      controlbar.initialize();
+      player.updateSettings({
+        'streaming': {
+          'lowLatencyEnabled': true,
+          'liveDelay': 1,
+          'liveCatchUpMinDrift': 0.05,
+          'liveCatchUpPlaybackRate': 0.5
+        }
+      });
+      return player;
+    }
+  </script>
+
+</body>
+
+</html>
