@@ -47,13 +47,13 @@ if __name__ == '__main__':
                 file.seek(-2, os.SEEK_END)
                 found_content = False
                 while True:
-                    c = f.read(1)
+                    c = file.read(1)
                     if not c.isspace():
                         found_content = True
                     if found_content and c == b'\n':
                         if found_content:
                             break
-                    f.seek(-2, os.SEEK_CUR)
+                    file.seek(-2, os.SEEK_CUR)
             except OSError:
                 file.seek(0)
             unique_ip = dict()
