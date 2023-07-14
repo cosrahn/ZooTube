@@ -10,7 +10,9 @@ from datetime import datetime, timedelta
 
 TIME_WINDOW = 5
 
-lineformat = re.compile(r"""(?P<ipaddress>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) - - \[(?P<dateandtime>\d{2}\/[a-z]{3}\/\d{4}:\d{2}:\d{2}:\d{2} (\+|\-)\d{4})\] ((\"(GET|POST) )(?P<url>.+)(http\/1\.1")) (?P<statuscode>\d{3}) (?P<bytessent>\d+) (["](?P<refferer>(\-)|(.+))["]) (["](?P<useragent>.+)["])""", re.IGNORECASE)
+lineformat = re.compile(
+    r"""(?P<ipaddress>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) - - \[(?P<dateandtime>\d{2}\/[a-z]{3}\/\d{4}:\d{2}:\d{2}:\d{2} (\+|\-)\d{4})\] ((\"(GET|POST) )(?P<url>.+)(http\/1\.1")) (?P<statuscode>\d{3}) (?P<bytessent>\d+) (["](?P<refferer>(\-)|(.+))["]) (["](?P<useragent>.+)["])""", re.IGNORECASE)
+
 
 def follow(file, sleep_sec=0.1) -> Iterator[str]:
     """ Yield each line from a file as they are written.
@@ -32,10 +34,11 @@ def follow(file, sleep_sec=0.1) -> Iterator[str]:
             if last_line_time + 60 < time.time():
                 break
 
+
 if __name__ == '__main__':
     while True:
         with open("/var/log/nginx/access.log", 'r') as file:
-            try:  # catch OSError in case of a one line file 
+            try:  # catch OSError in case of a one line file
                 file.seek(-2, os.SEEK_END)
                 found_content = False
                 while True:
@@ -54,7 +57,8 @@ if __name__ == '__main__':
                 if data:
                     datadict = data.groupdict()
                     ip = datadict["ipaddress"]
-                    datetimestring = element = datetime.strptime(datadict["dateandtime"],"%d/%b/%Y:%H:%M:%S %z")
+                    datetimestring = element = datetime.strptime(
+                        datadict["dateandtime"], "%d/%b/%Y:%H:%M:%S %z")
                     url = datadict["url"]
                     bytessent = datadict["bytessent"]
                     referrer = datadict["refferer"]
@@ -69,12 +73,12 @@ if __name__ == '__main__':
                             if v < datetime.now() - timedelta(seconds=TIME_WINDOW):
                                 for_delete.append(k)
                         for timeout_ip in for_delete:
-                            del(unique_ip[timeout_ip])
+                            del (unique_ip[timeout_ip])
 #                        print(f"{len(unique_ip)} {ip} {datetimestring} {url} {useragent}")
                         quote = {
                             "quote": len(unique_ip),
                         }
-                        #with open("/var/www/html/vod/quote.json", "w") as quote_fh:
+                        # with open("/var/www/html/vod/quote.json", "w") as quote_fh:
                         with open("/dev/shm/streaming/quote.json", "w") as quote_fh:
                             quote_fh.write(json.dumps(quote))
         print("reload nginx access log file")

@@ -31,14 +31,17 @@ for message in mobile.listen():
         event_data = r.hgetall(message["data"])
         print(event_data)
         tz = pytz.timezone('Europe/Berlin')
-        start_datetime_object = datetime.strptime(event_data["start"], '%Y-%m-%d %H:%M:%S') #.replace(tzinfo=tz)
-        stop_datetime_object = datetime.strptime(event_data["stop"], '%Y-%m-%d %H:%M:%S') #.replace(tzinfo=tz)
+        start_datetime_object = datetime.strptime(
+            event_data["start"], '%Y-%m-%d %H:%M:%S')  # .replace(tzinfo=tz)
+        stop_datetime_object = datetime.strptime(
+            event_data["stop"], '%Y-%m-%d %H:%M:%S')  # .replace(tzinfo=tz)
 
         onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
         m4s_files = [f for f in onlyfiles if f.endswith('.m4s')]
 
-        m4s_time_files = [f for f in m4s_files if isfile(f"{mypath}/{f}") and getmtime(f"{mypath}/{f}") >= start_datetime_object.timestamp() and getmtime(f"{mypath}/{f}") <= stop_datetime_object.timestamp() ]
-        #print(m4s_time_files)
+        m4s_time_files = [f for f in m4s_files if isfile(f"{mypath}/{f}") and getmtime(
+            f"{mypath}/{f}") >= start_datetime_object.timestamp() and getmtime(f"{mypath}/{f}") <= stop_datetime_object.timestamp()]
+        # print(m4s_time_files)
         if len(m4s_time_files) <= 0:
             print("Empty file list")
             continue
@@ -51,10 +54,13 @@ for message in mobile.listen():
         mkdir(f"{st_vodpath}/data")
         ffmpeg_filelist_s0 = list()
         ffmpeg_filelist_s1 = list()
-        shutil.copyfile(f"{mypath}/init-stream0.m4s", f"{st_vodpath}/data/init-stream0.m4s")
-        shutil.copyfile(f"{mypath}/init-stream1.m4s", f"{st_vodpath}/data/init-stream1.m4s")
+        shutil.copyfile(f"{mypath}/init-stream0.m4s",
+                        f"{st_vodpath}/data/init-stream0.m4s")
+        shutil.copyfile(f"{mypath}/init-stream1.m4s",
+                        f"{st_vodpath}/data/init-stream1.m4s")
         for filename in m4s_time_files:
-            shutil.copyfile(f"{mypath}/{filename}", f"{st_vodpath}/data/{filename}")
+            shutil.copyfile(f"{mypath}/{filename}",
+                            f"{st_vodpath}/data/{filename}")
             if "chunk-stream1" in filename:
                 ffmpeg_filelist_s1.append(filename)
             else:
@@ -98,9 +104,11 @@ for message in mobile.listen():
         print(f"run ffmpeg to create dash VOD and Download files")
         # ffmpeg -i media_0.m4s -i media_1.m4s -c:v copy -map 0:v -map 1:v -f dash -seg_duration 2 -use_timeline 1 -window_size 3600 -hls_playlist 1 -adaptation_sets "id=0,streams=v id=1,streams=a" manifest.mpd
         chunk_command = ['/usr/bin/ffmpeg', '-y', '-loglevel', 'error', '-i', f'{st_vodpath}/media_0.m4s', '-i', f'{st_vodpath}/media_1.m4s', '-c:v', 'copy', '-map', '0:v', '-map', '1:v',
-                            '-f', 'dash', '-seg_duration', '2', '-use_timeline', '1', '-window_size', '3600', '-hls_playlist', '1', '-adaptation_sets', '"id=0,streams=v id=1,streams=a"', f'{st_vodpath}/manifest.mpd']
-        download_ts_high_command = ['/usr/bin/ffmpeg', '-y', '-loglevel', 'error', '-i', f'{st_vodpath}/media_0.m4s', '-c:v', 'copy', '-an', '-f', 'mpegts', f'{st_vodpath}/ChickenRun_{vod_part_ts}_HighRes.ts']
-        download_ts_low_command = ['/usr/bin/ffmpeg', '-y', '-loglevel', 'error', '-i', f'{st_vodpath}/media_1.m4s', '-c:v', 'copy', '-an', '-f', 'mpegts', f'{st_vodpath}/ChickenRun_{vod_part_ts}_LowRes.ts']
+                         '-f', 'dash', '-seg_duration', '2', '-use_timeline', '1', '-window_size', '3600', '-hls_playlist', '1', '-adaptation_sets', '"id=0,streams=v id=1,streams=a"', f'{st_vodpath}/manifest.mpd']
+        download_ts_high_command = ['/usr/bin/ffmpeg', '-y', '-loglevel', 'error', '-i',
+                                    f'{st_vodpath}/media_0.m4s', '-c:v', 'copy', '-an', '-f', 'mpegts', f'{st_vodpath}/ChickenRun_{vod_part_ts}_HighRes.ts']
+        download_ts_low_command = ['/usr/bin/ffmpeg', '-y', '-loglevel', 'error', '-i',
+                                   f'{st_vodpath}/media_1.m4s', '-c:v', 'copy', '-an', '-f', 'mpegts', f'{st_vodpath}/ChickenRun_{vod_part_ts}_LowRes.ts']
         with open(f"{st_vodpath}/ffmpeg_line.sh", "w") as ffmpeg:
             ffmpeg.write("#!/bin/bash\n")
             ffmpeg.write(f"cd {st_vodpath}\n")
@@ -119,7 +127,8 @@ for message in mobile.listen():
         remove(f"{st_vodpath}/ffmpeg_line.sh")
 
         print(f"create video_list.json")
-        vodfiles = [[f"{datetime.fromtimestamp(int(f) + 3600)}", f"/vod/{f}/manifest.mpd", "", f"{int(f)}"] for f in listdir(vodpath) if not isfile(join(vodpath, f))]
+        vodfiles = [[f"{datetime.fromtimestamp(int(f) + 3600)}", f"/vod/{f}/manifest.mpd", "", f"{int(f)}"]
+                    for f in listdir(vodpath) if not isfile(join(vodpath, f))]
         vodfiles.sort()
 
         vod_comment_dict = dict()
@@ -128,7 +137,7 @@ for message in mobile.listen():
             vod_path, _ = split(vodfile)
             if isfile(f"/var/www/html/{vod_path}/comment.txt"):
                 with open(f"/var/www/html/{vod_path}/comment.txt", "r") as vod_comment_f:
-                    vod_comment_dict[counter]  = vod_comment_f.read()
+                    vod_comment_dict[counter] = vod_comment_f.read()
             counter += 1
 
         for k, v in vod_comment_dict.items():
