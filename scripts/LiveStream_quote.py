@@ -79,11 +79,9 @@ if __name__ == '__main__':
                                 for_delete.append(k)
                         for timeout_ip in for_delete:
                             del (unique_ip[timeout_ip])
-#                        print(f"{len(unique_ip)} {ip} {datetimestring} {url} {useragent}")
                         quote = {
                             "quote": len(unique_ip),
                         }
-                        # with open("/var/www/html/vod/quote.json", "w") as quote_fh:
                         with open("/dev/shm/streaming/quote.json", "w") as quote_fh:
                             quote_fh.write(json.dumps(quote))
         print("reload nginx access log file")
