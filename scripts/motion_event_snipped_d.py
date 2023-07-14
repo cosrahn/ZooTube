@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+This script is used to create a clip from a motion event.
+"""
+
 import time
 import redis
 from datetime import datetime
