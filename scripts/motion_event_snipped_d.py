@@ -10,7 +10,6 @@ from datetime import datetime
 from os import listdir, mkdir, remove
 from os.path import isfile, join, getmtime, split
 import shutil
-from string import Template
 import subprocess
 import json
 import pytz
@@ -45,7 +44,7 @@ for message in mobile.listen():
 
         m4s_time_files = [f for f in m4s_files if isfile(f"{mypath}/{f}") and getmtime(
             f"{mypath}/{f}") >= start_datetime_object.timestamp() and getmtime(f"{mypath}/{f}") <= stop_datetime_object.timestamp()]
-        # print(m4s_time_files)
+
         if len(m4s_time_files) <= 0:
             print("Empty file list")
             continue
@@ -106,7 +105,7 @@ for message in mobile.listen():
             remove(f"{st_vodpath}/data/{fname}")
 
         print(f"run ffmpeg to create dash VOD and Download files")
-        # ffmpeg -i media_0.m4s -i media_1.m4s -c:v copy -map 0:v -map 1:v -f dash -seg_duration 2 -use_timeline 1 -window_size 3600 -hls_playlist 1 -adaptation_sets "id=0,streams=v id=1,streams=a" manifest.mpd
+
         chunk_command = ['/usr/bin/ffmpeg', '-y', '-loglevel', 'error', '-i', f'{st_vodpath}/media_0.m4s', '-i', f'{st_vodpath}/media_1.m4s', '-c:v', 'copy', '-map', '0:v', '-map', '1:v',
                          '-f', 'dash', '-seg_duration', '2', '-use_timeline', '1', '-window_size', '3600', '-hls_playlist', '1', '-adaptation_sets', '"id=0,streams=v id=1,streams=a"', f'{st_vodpath}/manifest.mpd']
         download_ts_high_command = ['/usr/bin/ffmpeg', '-y', '-loglevel', 'error', '-i',
