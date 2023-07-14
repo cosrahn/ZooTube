@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+This script just scan the nginx access.log file to determine the ratings of the livestream.
+"""
+
 import os
 import re
 import time
@@ -8,6 +12,7 @@ from typing import Iterator
 import pytz
 from datetime import datetime, timedelta
 
+# search for the last TIME_WINDOW seconds to determine the rating
 TIME_WINDOW = 5
 
 lineformat = re.compile(
